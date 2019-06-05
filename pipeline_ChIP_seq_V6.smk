@@ -9,18 +9,18 @@ SAMPLES = json.load(open(config["SAMPLES"]))
 
 TARGETS = []
 
-ALL_BAM = []
-ALL_SORTED_BAM = []
-ALL_BIGWIG = []
-ALL_PEAKS = []
-ALL_STAT = []
-ALL_ANNOTATE = []
-ALL_RNA_DIFF = []
-ALL_GENE_LIST = []
-ALL_HOMER = []
-ALL_ROSE = []
+ALL_BAM = []  # For BAM files
+ALL_SORTED_BAM = []  # For sorted BAM files
+ALL_BIGWIG = []  # For bigwig files
+ALL_PEAKS = []  # For MACS2 peaks
+ALL_STAT = []  # For alignments statistics
+ALL_ANNOTATE = []  # For annotated files (ROSE_geneMapper output, ...)
+ALL_RNA_DIFF = []  # DEG analysis results
+ALL_GENE_LIST = []  # Final gene list
+#ALL_HOMER = []  # HOMER not implemented yet
+ALL_ROSE = []  # ROSE_main.py output
 ALL_GENES = []
-ALL_SICER = []
+#ALL_SICER = []  # SICER is no longer implemented in the pipeline
 
 # Determine if an INPUT should be use while performing the peak calling step.
 CONTROL = config["CONTROL"]
@@ -30,11 +30,14 @@ CONTROL = config["CONTROL"]
 for CASE in SAMPLES["case:control"]:
 
 	if CONTROL == "Control":
-		#ALL_BAM.append("01aln/{case}.bam".format(case=SAMPLES["case:control"][CASE]))
-		#ALL_STAT.append("01stat/{case}_align_stat.txt".format(case=SAMPLES["case:control"][CASE]))
-		#ALL_SORTED_BAM.append("02aln/{case}_sorted.bam".format(case=SAMPLES["case:control"][CASE]))
-		#ALL_SORTED_BAM.append("02aln/{case}_sorted.bai".format(case=SAMPLES["case:control"][CASE]))
-		ALL_BIGWIG.append("03bw/{case}.bigWig".format(case=SAMPLES["case:control"][CASE]))
+		ALL_BAM.append("01aln/{case}.bam".format(case=SAMPLES["case:control"][CASE]))
+		ALL_STAT.append("01stat/{case}_align_stat.txt".format(case=SAMPLES["case:control"][CASE]))
+		ALL_SORTED_BAM.append("02aln/{case}_sorted.bam".format(case=SAMPLES["case:control"][CASE]))  # BAM
+		ALL_SORTED_BAM.append("02aln/{case}_sorted.bai".format(case=SAMPLES["case:control"][CASE]))  # BAM Index
+		ALL_BIGWIG.append("03bw/{case}.bigWig".format(case=SAMPLES["case:control"][CASE]))  # BIGWIG
+	elif CONTROL == "NoControl":
+
+
 	else: None
 	#ALL_BAM.append("01aln/{case}.sam".format(case=CASE))
 	#ALL_BAM.append("01aln/{case}.bam".format(case=CASE))
@@ -90,12 +93,15 @@ TARGETS.extend(ALL_HOMER)
 TARGETS.extend(ALL_ROSE)
 TARGETS.extend(ALL_SICER)
 
-print(TARGETS)
+#print(TARGETS)
 
 # This rule tell snakemake wich files to create, based on samples.json data
 rule all:
 	input: TARGETS
 
+#=========================================================
+#=====================   Alignment   =====================
+#=========================================================
 
 # Map fastq data on hg19 with bowtie2. Return temporary sam files + alignment statistics
 rule bowtie2_map:
@@ -147,6 +153,7 @@ rule bamCoverage_bigWig:
 		"source deactivate deeptools"
 
 
+# BAM to BED conversion
 rule bam_to_bed:
 	input:
 		"02aln/{sample}_sorted.bam"
@@ -156,6 +163,69 @@ rule bam_to_bed:
 		"bamToBed -i {input}>{output}"
 
 
+#=========================================================
+#===================   Peak calling   ====================
+#=========================================================
+
+# Perform peakcalling with macs2 for a IP file WITHOUT its Input file
+rule call_peaks_macs2_nocontrol:
+	input:
+		case="02aln/{case}_sorted.bam",
+	output:
+		bed="06peaks/{case}_NoControl_summits.bed",
+		xls="06peaks/{case}_NoControl_peaks.xls",
+		bdg="06peaks/{case}_treat_pileup.bdg"
+	params:
+		name="{case}_NoControl"
+	shell:
+		"macs2 callpeak -B -t {input.case} -f BAM -g hs -n {params.name} --outdir 06peaks/"
+
+
+#=========================================================
+#==================  Annotate peaks   ====================
+#=========================================================
+
+# Perform columns swap needed for ROSE_geneMapper.py tool using awk
+rule awk_bed_formating:
+	input:
+		"06peaks/{alt_case}_vs_{case}_noOverlap_{control}.bed"
+	output:
+		"06peaks/{alt_case}_vs_{case}_noOverlap_{control}_colSwap.bed"
+	shell:
+		"./awk_formating.sh {input} {output}"
+
+
+# Use ROSE_geneMapper.py script to call genes overlapping or close to a ChIP-seq peak, plus the closest one.
+# python /usr/local/bin/ROSE_geneMapper.py -i tmp/all_IP2_Ac_R1_peaks_vs_IP1_Ac_R1_peaks:IP3_Ac_R1_peaks:IP4_Ac_R1_peaks_sorted_merge_colswap_c3.0_cond1.bed -g HG19 -o tmp/
+rule ROSE_geneMapper:
+	input:
+		"11diff_binding/all_{alt_case}_vs_{case1}:{case2}:{case3}_peaks_sorted_merge_colswap_keep_cond1.bed"
+	output:
+		"10ROSE/all_{alt_case}_vs_{case1}:{case2}:{case3}_peaks_sorted_merge_colswap_keep_cond1_ENHANCER_TO_GENE.txt"
+	shell:
+		"source activate ROSE_env &&"
+		"python /usr/local/bin/ROSE_geneMapper.py -i {input} -g HG19 -o 10ROSE/ &&"
+		"source deactivate ROSE_env"
+
+
+#=========================================================
+#===================   DEG results   ====================
+#=========================================================
+
+# Return significantly up-regulated or down-regulated genes between {case} and {alt_case}, up-regulated/down-regulated	 in alt_case so.
+rule cummeRbund_regulated_genes:
+	input:
+		"06peaks/{alt_case}_vs_{case}_noOverlap_{control}.bed"
+	output:
+		"07diff/{alt_case}_vs_{case}_{control}_significiant_genes_rnaseq.tsv"
+	shell:
+		"Rscript ../ChIP_seq_projet/callUpRegulatedGenes.R {input} {output} {wildcards.alt_case} {wildcards.case}"
+
+
+
+
+"""
+# No longer implemented
 rule peakcalling_SICER:
 	input:
 		bed="02aln/{case}_sorted.bed",
@@ -170,6 +240,7 @@ rule peakcalling_SICER:
 		"source deactivate SICER_env"
 
 
+# No longer implemented
 rule annotate_peaks_bedops:
 	input:
 		"02aln/{case}_sorted-vs-{cond}_sorted-W{window_size}-G{gap_size}-increased-islands-summary-FDR0.05"#{FDR}"
@@ -178,6 +249,8 @@ rule annotate_peaks_bedops:
 	shell:
 		"closest-features {input} /home/pameslin/data/ChIP_seq_projet/data/hg19_genes_symbol_sorted.bed > {output}"
 
+
+# Diffenrial peak calling with MACS2
 rule create_bdg_macs2:
 	input:
 		"02aln/{sample}_sorted.bam"
@@ -224,18 +297,6 @@ rule genes_discard:
 		#"echo {output} &&"
 		"python3 onlyThreePeaks.py {input} {output}"
 
-# Use ROSE_geneMapper.py script to call genes overlapping or close to a ChIp-seq peak, plus the closest one.
-# python /usr/local/bin/ROSE_geneMapper.py -i tmp/all_IP2_Ac_R1_peaks_vs_IP1_Ac_R1_peaks:IP3_Ac_R1_peaks:IP4_Ac_R1_peaks_sorted_merge_colswap_c3.0_cond1.bed -g HG19 -o tmp/
-rule ROSE_geneMapper:
-	input:
-		"11diff_binding/all_{alt_case}_vs_{case1}:{case2}:{case3}_peaks_sorted_merge_colswap_keep_cond1.bed"
-	output:
-		"10ROSE/all_{alt_case}_vs_{case1}:{case2}:{case3}_peaks_sorted_merge_colswap_keep_cond1_ENHANCER_TO_GENE.txt"
-	shell:
-		"source activate ROSE_env &&"
-		"python /usr/local/bin/ROSE_geneMapper.py -i {input} -g HG19 -o 10ROSE/ &&"
-		"source deactivate ROSE_env"
-
 
 # Return a txt file with genes significantly up-regulated genes in RNA-seq experiment AND overlapping and/or near and the closest one to a peak in ChIP-seq experiment.
 rule python3_ChIPseq_vs_RNAseq:
@@ -248,16 +309,6 @@ rule python3_ChIPseq_vs_RNAseq:
 		"python3 callGenes_RNA_ChIP_seq.py {input.tsv} {input.txt} {output}"
 
 
-# Return significantly up-regulated or down-regulated genes between {case} and {alt_case}, up-regulated/down-regulated	 in alt_case so.
-rule cummeRbund_regulated_genes:
-	input:
-		"06peaks/{alt_case}_vs_{case}_noOverlap_{control}.bed"
-	output:
-		"07diff/{alt_case}_vs_{case}_{control}_significiant_genes_rnaseq.tsv"
-	shell:
-		"Rscript ../ChIP_seq_projet/callUpRegulatedGenes.R {input} {output} {wildcards.alt_case} {wildcards.case}"
-
-"""
 # Return a bed file with features present in IP2 and NOT in IP1. Use intersect tool from bedtools
 rule bedtools_intersect	:
 	input:
@@ -269,16 +320,6 @@ rule bedtools_intersect	:
 		"06peaks/{alt_case}_vs_{bed1}:{bed2}:{bed3}_noOverlap_{control}.bed"
 	shell:
 		"bedtools intersect -wa -a {input.alt_case} -b {input.case1} -v -f 0.50 -r | bedtools intersect -wa -a stdin -b {input.case2} -v -f 0.50 -r | bedtools intersect -wa -a stdin -b {input.case3} -v -f 0.50 -r > {output}"
-
-
-# Perform columns swap needed for ROSE_geneMapper.py tool using awk
-rule awk_bed_formating:
-	input:
-		"06peaks/{alt_case}_vs_{case}_noOverlap_{control}.bed"
-	output:
-		"06peaks/{alt_case}_vs_{case}_noOverlap_{control}_colSwap.bed"
-	shell:
-		"./awk_formating.sh {input} {output}"
 
 # Use HOMER tool to annotate a given bed file.
 rule homer_annotatePeaks:
@@ -303,21 +344,6 @@ rule call_peaks_macs2:
 		name="{case}_vs_{control}"
 	shell:
 		"macs2 callpeak -t {input.case} -c {input.control} -f BAM -g hs -n {params.name} --outdir 04peaks/"
-
-# Perform peakcalling with macs2 for a IP file WITHOUT its Input file
-rule call_peaks_macs2_nocontrol:
-	input:
-		case="02aln/{case}_sorted.bam",
-	output:
-		bed="06peaks/{case}_NoControl_summits.bed",
-		xls="06peaks/{case}_NoControl_peaks.xls",
-		bdg="06peaks/{case}_treat_pileup.bdg"
-	params:
-		name="{case}_NoControl"
-	shell:
-		"macs2 callpeak -B -t {input.case} -f BAM -g hs -n {params.name} --outdir 06peaks/"
-
-
 
 
 
