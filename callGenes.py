@@ -1,3 +1,5 @@
+#This script is no longer used due to SICER removal.
+
 import sys
 
 
