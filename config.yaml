@@ -1,0 +1,15 @@
+SAMPLES: "samples.json"
+
+# Control or NoControl
+CONTROL: "NoControl"
+
+# Default 30 processors, depends on the capacity and load of the server.
+bowtie2_processors: 30
+
+# Other values: max/2 etc.
+bamCoverage_processors: "max"
+
+# SICER parameters:
+window_size: "200"
+gap_size: "600"
+FDR: "0.05"

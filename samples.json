@@ -1,0 +1,17 @@
+{
+  "case:control":{
+    "IP1_Ac_R1":"Input1_R1",
+    "IP2_Ac_R1":"Input2_R1_All",
+    "IP3_Ac_R1":"Input3_R1_All",
+    "IP4_Ac_R1":"Input4_R1"
+  },
+  "diff":{
+        "IP2_Ac_R1": ["IP1_Ac_R1", "IP3_Ac_R1", "IP4_Ac_R1"]
+ },
+  "rna_seq_name":{
+    "IP1":"BEAS2B_DMSO",
+    "IP2":"BEAS2B_DOX",
+    "IP3":"BEAS2B_DOX_EZM2302",
+    "IP4":"BEAS2B_DOX_GSI"
+  }
+}
