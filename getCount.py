@@ -1,4 +1,4 @@
-# This script was a experiment. No longer used for hockey stick plots generation.
+# This script was an experiment. No longer used for hockey stick plots generation.
 
 import sys
 import matplotlib.pyplot as plt
