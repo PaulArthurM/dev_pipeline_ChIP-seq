@@ -17,9 +17,9 @@ ALL_STAT = []  # For alignments statistics
 ALL_ANNOTATE = []  # For annotated files (ROSE_geneMapper output, ...)
 ALL_RNA_DIFF = []  # DEG analysis results
 ALL_GENE_LIST = []  # Final gene list
-#ALL_HOMER = []  # HOMER not implemented yet
 ALL_ROSE = []  # ROSE_main.py output
 ALL_GENES = []
+#ALL_HOMER = []  # HOMER not implemented yet
 #ALL_SICER = []  # SICER is no longer implemented in the pipeline
 
 # Determine if an INPUT should be use while performing the peak calling step.
@@ -28,31 +28,30 @@ CONTROL = config["CONTROL"]
 
 # Create name templates based on SAMPLES["case:control"] data
 for CASE in SAMPLES["case:control"]:
-
+	ALL_BAM.append("01aln/{case}.bam".format(case=CASE))
+	ALL_STAT.append("01stat/{case}_align_stat.txt".format(case=CASE))
+	ALL_SORTED_BAM.append("02aln/{case}_sorted.bam".format(case=CASE))
+	ALL_SORTED_BAM.append("02aln/{case}_sorted.bai".format(case=CASE))
+	ALL_BIGWIG.append("03bw/{case}.bigWig".format(case=CASE))
 	if CONTROL == "Control":
 		ALL_BAM.append("01aln/{case}.bam".format(case=SAMPLES["case:control"][CASE]))
 		ALL_STAT.append("01stat/{case}_align_stat.txt".format(case=SAMPLES["case:control"][CASE]))
 		ALL_SORTED_BAM.append("02aln/{case}_sorted.bam".format(case=SAMPLES["case:control"][CASE]))  # BAM
 		ALL_SORTED_BAM.append("02aln/{case}_sorted.bai".format(case=SAMPLES["case:control"][CASE]))  # BAM Index
 		ALL_BIGWIG.append("03bw/{case}.bigWig".format(case=SAMPLES["case:control"][CASE]))  # BIGWIG
+		ALL_PEAKS.append("06peaks/{case}_{control}_peaks.xls".format(case=CASE, control=CONTROL))
 	elif CONTROL == "NoControl":
+		ALL_PEAKS.append("06peaks/{case}_NoControl_summits.bed".format(case=CASE))
 
-
-	else: None
-	#ALL_BAM.append("01aln/{case}.sam".format(case=CASE))
-	#ALL_BAM.append("01aln/{case}.bam".format(case=CASE))
-	#ALL_STAT.append("01stat/{case}_align_stat.txt".format(case=CASE))
-	#ALL_SORTED_BAM.append("02aln/{case}_sorted.bam".format(case=CASE))
-	#ALL_SORTED_BAM.append("02aln/{case}_sorted.bai".format(case=CASE))
+	#else: None
 	#ALL_SORTED_BAM.append("02aln/{case}_sorted.bed".format(case=CASE))
-	#ALL_BIGWIG.append("03bw/{case}.bigWig".format(case=CASE))
 	#ALL_PEAKS.append("06peaks/{case}_{control}_peaks.xls".format(case=CASE, control=CONTROL))
 	#ALL_GENES.append("11diff_binding/{case}the_control_lambda.bdg".format(case=CASE))
 	#ALL_GENES.append("11diff_binding/{case}_peaks.xls".format(case=CASE))
 
 
 
-for SAMPLE in SAMPLES["diff"]:
+#for SAMPLE in SAMPLES["diff"]:
 	#ALL_PEAKS.append("06peaks/{alt_case}_vs_{cases}_noOverlap_{control}.bed".format(alt_case=SAMPLE, cases=":".join(SAMPLES["diff"][SAMPLE]), control=CONTROL))
 	#ALL_ROSE.append("06peaks/{alt_case}_vs_{cases}_noOverlap_{control}_colSwap.bed".format(alt_case=SAMPLE, cases=":".join(SAMPLES["diff"][SAMPLE]), control=CONTROL))
 	#ALL_ROSE.append("10ROSE/all_{alt_case}_vs_{cases}_peaks_sorted_merge_colswap_keep_cond1_ENHANCER_TO_GENE.txt".format(alt_case=SAMPLE, cases=":".join(SAMPLES["diff"][SAMPLE]), control=CONTROL))
@@ -62,22 +61,14 @@ for SAMPLE in SAMPLES["diff"]:
 	#"11diff_binding/all_{alt_case}_vs_{case1}:{case2}:{case3}_peaks_sorted_merge_colswap_keep_cond1.bed"
 	#12final_output_genes/{alt_case}_vs_{case1}:{case2}:{case3}_{control}_gene_list_ROSE.txt
 	#ALL_HOMER.append("09homer/{alt_case}_vs_{cases}_noOverlap_{control}.txt".format(alt_case=SAMPLE, cases=":".join(SAMPLES["diff"][SAMPLE]), control=CONTROL))
-	for COND in SAMPLES["diff"][SAMPLE]:
+	#for COND in SAMPLES["diff"][SAMPLE]:
 		#ALL_SICER.append("02aln/{case}_vs_{cond}_increased.bed".format(case=SAMPLE, cond=COND))
 		#ALL_SICER.append("02aln/{case}_vs_{cond}_increased_peaks_annotation.bed".format(case=SAMPLE, cond=COND))
 		#ALL_SICER.append("02aln/{case}_sorted-vs-{cond}_sorted-W{window_size}-G{gap_size}-decreased-islands-summary-FDR{FDR}".format(case=SAMPLE, cond=COND, window_size=config["window_size"], gap_size=config["gap_size"], FDR=config["FDR"]))
 		#ALL_SICER.append("02aln/{case}_sorted-vs-{cond}_sorted-W{window_size}-G{gap_size}-decreased-islands-summary-FDR{FDR}-annotated".format(case=SAMPLE, cond=COND, window_size=config["window_size"], gap_size=config["gap_size"], FDR=config["FDR"]))
-		None
-ALL_SICER.append("02aln/{case}_sorted-vs-{cond}_sorted-W{window_size}-G{gap_size}-increased-islands-summary-FDR{FDR}".format(case="IP1_Ac_R1", cond="IP2_Ac_R1", window_size=config["window_size"], gap_size=config["gap_size"], FDR=config["FDR"]))
-ALL_SICER.append("02aln/{case}_sorted-vs-{cond}_sorted-W{window_size}-G{gap_size}-increased-islands-summary-FDR{FDR}-annotated".format(case="IP1_Ac_R1", cond="IP2_Ac_R1", window_size=config["window_size"], gap_size=config["gap_size"], FDR=config["FDR"]))
-
-
-
-"""
-		ALL_ANNOTATE.append("06_2annotate/{alt_case}_vs_{case}_noOverlap_{control}_annotation_{regulation}.bed".format(alt_case=ALT_CASE, case=CASE, control=CONTROL))
-		ALL_RNA_DIFF.append("07diff/{alt_case}_vs_{case}_{control}_significiant_genes_rnaseq_{regulation}.tsv".format(alt_case=ALT_CASE, case=CASE, control=CONTROL))
-		ALL_GENE_LIST.append("08summary/{alt_case}_vs_{case}_{control}_gene_list.txt".format(alt_case=ALT_CASE, case=CASE, control=CONTROL))
-"""
+		#ALL_ANNOTATE.append("06_2annotate/{alt_case}_vs_{case}_noOverlap_{control}_annotation_{regulation}.bed".format(alt_case=ALT_CASE, case=CASE, control=CONTROL))
+		#ALL_RNA_DIFF.append("07diff/{alt_case}_vs_{case}_{control}_significiant_genes_rnaseq_{regulation}.tsv".format(alt_case=ALT_CASE, case=CASE, control=CONTROL))
+		#ALL_GENE_LIST.append("08summary/{alt_case}_vs_{case}_{control}_gene_list.txt".format(alt_case=ALT_CASE, case=CASE, control=CONTROL))
 
 # Add all generated names to TARGETS
 TARGETS.extend(ALL_BAM)
@@ -85,13 +76,11 @@ TARGETS.extend(ALL_STAT)
 TARGETS.extend(ALL_SORTED_BAM)
 TARGETS.extend(ALL_BIGWIG)
 TARGETS.extend(ALL_PEAKS)
-TARGETS.extend(ALL_GENES)
+TARGETS.extend(ALL_ROSE)
+#TARGETS.extend(ALL_GENES)
 #TARGETS.extend(ALL_ANNOTATE)
 #TARGETS.extend(ALL_RNA_DIFF)
-TARGETS.extend(ALL_GENE_LIST)
-TARGETS.extend(ALL_HOMER)
-TARGETS.extend(ALL_ROSE)
-TARGETS.extend(ALL_SICER)
+#TARGETS.extend(ALL_GENE_LIST)
 
 #print(TARGETS)
 
@@ -178,7 +167,20 @@ rule call_peaks_macs2_nocontrol:
 	params:
 		name="{case}_NoControl"
 	shell:
-		"macs2 callpeak -B -t {input.case} -f BAM -g hs -n {params.name} --outdir 06peaks/"
+		"macs2 callpeak -t {input.case} -f BAM -g hs -n {params.name} --outdir 06peaks/"
+
+
+# Perform peakcalling with macs2 for a IP file WITH its proper Input file
+rule call_peaks_macs2:
+	input:
+		case="02aln/{case}_sorted.bam",
+		control="02aln/{control}_sorted.bam"
+	output:
+		bed="04peaks/{case}_vs_{control}_Control_summits.bed"
+	params:
+		name="{case}_vs_{control}_Control"
+	shell:
+		"macs2 callpeak -t {input.case} -c {input.control} -f BAM -g hs -n {params.name} --outdir 04peaks/"
 
 
 #=========================================================
