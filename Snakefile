@@ -97,7 +97,7 @@ rule bowtie2_map:
 	input:
 		fastq="	Fastq_files/{sample}.fastq"
 	params:
-		index="/home/data/pameslin/data/ChIP_seq_projet/data/Index_hg19/genome",
+		index="/home/data/pameslin/data/ChIP_seq_projet/data/Index_hg19/genome",  # Include Index files to the projet
 		processors= config["bowtie2_processors"]
 	output:
 		sam=temp("01aln/{sample}.sam"),
@@ -181,6 +181,21 @@ rule call_peaks_macs2:
 		name="{case}_vs_{control}_Control"
 	shell:
 		"macs2 callpeak -t {input.case} -c {input.control} -f BAM -g hs -n {params.name} --outdir 04peaks/"
+
+
+#=========================================================
+#=================  Diffenrial peaks   ===================
+#=========================================================
+
+rule macs2_call_diff_peak:
+	input:
+		case="02aln/{case}_sorted.bam",
+		control="02aln/{control}_sorted.bam"
+	output:
+		diff_binding="06peaks/{case}_{control}_peaks.xls"
+	shell:
+		"macs2 callpeak -B -t {case} -c {control} -n {case}_{control} --nomodel --extsize 147"
+
 
 
 #=========================================================
