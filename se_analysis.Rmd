@@ -1,0 +1,357 @@
+---
+title: "Analysis of super-enhancer data"
+author: "Paul-Arthur MESLIN"
+date: "20/05/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Analysis of super-enhancer data
+
+## Importation des librairies
+```{r libraries}
+library(ggplot2)
+library(readr)
+library(dplyr)
+library(tidyr)
+library(gridExtra)
+#library(ggpubr)
+```
+
+
+## Changement de répertoire de travail 
+```{r cd}
+setwd("/home/data/pameslin")
+
+theme_plot <- theme(panel.background = element_rect(fill = "white", colour = "grey90"), legend.key = element_rect(fill = "white", color = NA), panel.grid.major.y = element_blank(), panel.grid.minor.y = element_blank())
+```
+
+## Noms des colonnes
+```{r colnames}
+col.names <- c("chr", "start", "end", "id", "rank", "strand", "count", "null1", "null2", "null3")
+```
+
+# Nouvelles data
+Lecture des TSV contenant les données d'intérêts.
+```{r add_data}
+#df_IP2_slopCentro100kb <- read_tsv("13counts/IP2_Ac_counts_sloped200_nocentro100kb.txt", col_names = col.names)
+#df_IP1_slopCentro100kb <- read_tsv("13counts/IP1_Ac_counts_sloped200_nocentro100kb.txt", col_names = col.names)
+#df_IP3_slopCentro100kb <- read_tsv("13counts/IP3_Ac_counts_sloped200_nocentro100kb.txt", col_names = col.names)
+#df_IP4_slopCentro100kb <- read_tsv("13counts/IP4_Ac_counts_sloped200_nocentro100kb.txt", col_names = col.names)
+
+df_IP2_slopCentro100kb <- read_tsv("IP2_Ac_counts_sloped200_IP1.txt", col_names = col.names)
+df_IP1_slopCentro100kb <- read_tsv("IP1_Ac_counts_sloped200_IP1.txt", col_names = col.names)
+df_IP3_slopCentro100kb <- read_tsv("IP3_Ac_counts_sloped200_IP1.txt", col_names = col.names)
+df_IP4_slopCentro100kb <- read_tsv("IP4_Ac_counts_sloped200_IP1.txt", col_names = col.names)
+
+
+id.gene <- read_tsv("05_06_2019/IP1_Ac_R1_NoControl_peaks_nblacklisted_bedsort_awkform_cutf5_ENHANCER_TO_GENE_500KB_EXTAND.txt", col_names = c("ID", "Gene"))
+id.gene
+```
+
+
+## Transformation des nouvelles data
+```{r transmute}
+norm_count_IP1 = df_IP1_slopCentro100kb$count/57782250
+
+df_IP1_slopCentro100kb <-mutate(df_IP1_slopCentro100kb, null1 = NULL, null2 = NULL, null3 = NULL, norm_count = count/57782250, log = log(norm_count), log2_foldchange = log(norm_count_IP1/norm_count, 2), exp = "IP1_slopCentro100kb")
+
+df_IP2_slopCentro100kb <-mutate(df_IP2_slopCentro100kb, null1 = NULL, null2 = NULL, null3 = NULL, norm_count = count/57694332, log = log(norm_count), log2_foldchange = log(df_IP1_slopCentro100kb$norm_count/norm_count, 2), exp = "IP2_slopCentro100kb")
+
+df_IP3_slopCentro100kb <-mutate(df_IP3_slopCentro100kb, null1 = NULL, null2 = NULL, null3 = NULL, norm_count = count/54223329, log = log(norm_count), log2_foldchange = log(df_IP1_slopCentro100kb$norm_count/norm_count, 2), exp = "IP3_slopCentro100kb")
+
+df_IP4_slopCentro100kb <-mutate(df_IP4_slopCentro100kb, null1 = NULL, null2 = NULL, null3 = NULL, norm_count = count/54804006, log = log(norm_count), log2_foldchange = log(df_IP1_slopCentro100kb$norm_count/norm_count, 2), exp = "IP4_slopCentro100kb")
+```
+
+## Création du dataframe
+```{r df}
+small.df <- rbind(df_IP1_slopCentro100kb, df_IP3_slopCentro100kb, df_IP4_slopCentro100kb)
+head(small.df)
+```
+
+## Hockey stick plots
+```{r hockey stick plots}
+df_IP2_slopCentro100kb %>% ggplot(aes(x = rank, y = norm_count)) + geom_point(color = "blue", size = 0.1) + theme_plot + scale_x_continuous(name="Rang") + scale_y_continuous(name="Comptage Normalisé (reads/total reads)")  + scale_x_reverse()
+
+df_IP1_slopCentro100kb %>% ggplot(aes(x = rank, y = norm_count)) + geom_point(color = "red", size = 0.1) + theme_plot + scale_x_continuous(name="Rang") + scale_y_continuous(name="Comptage Normalisé")  + scale_x_reverse()
+
+df_IP3_slopCentro100kb %>% ggplot(aes(x = rank, y = norm_count)) + geom_point(color = "forestgreen", size = 0.1) + theme_plot + scale_x_continuous(name="Rang") + scale_y_continuous(name="Comptage Normalisé")  + scale_x_reverse()
+
+df_IP4_slopCentro100kb %>% ggplot(aes(x = rank, y = norm_count)) + geom_point(color = "purple", size = 0.1) + theme_plot + scale_x_continuous(name="Rang") + scale_y_continuous(name="Comptage Normalisé")  + scale_x_reverse()
+```
+
+# Représentation des log2(ratio)
+```{r plots}
+ggplot(small.df, aes(rank, log2_foldchange, color = exp)) + geom_point() + geom_hline(yintercept = log(1))
+
+l1 <- ggplot(df_IP1_slopCentro100kb, aes(rank, log2_foldchange)) + geom_point(color = "red") + geom_hline(yintercept = log(1)) + theme_plot + scale_x_reverse()
+
+l2 <- ggplot(df_IP2_slopCentro100kb, aes(rank, log2_foldchange)) + geom_point(color = "blue") + geom_hline(yintercept = log(1)) + theme_plot  + scale_x_reverse()
+
+l3 <- ggplot(df_IP3_slopCentro100kb, aes(rank, log2_foldchange)) + geom_point(color = "forestgreen") + geom_hline(yintercept = log(1)) + theme_plot  + scale_x_reverse()
+
+l4 <- ggplot(df_IP4_slopCentro100kb, aes(rank, log2_foldchange)) + geom_point(color = "purple") + geom_hline(yintercept = log(1)) + theme_plot  + scale_x_reverse()
+
+
+grid.arrange(l1, l2, l3, l4, nrow=2)
+```
+
+## Re-ordering of IP2 value
+```{r reordering}
+#re.ordered_IP2.df <- df_IP2_slopCentro100kb %>% arrange(desc(norm_count))
+#re.ordered_IP2.df <- re.ordered_IP2.df %>% mutate(norm_count_IP1 = df_IP1_slopCentro100kb$norm_count, norm_count_IP2 = df_IP2_slopCentro100kb$norm_count, norm_count_IP3 = df_IP3_slopCentro100kb$norm_count, norm_count_IP4 = df_IP4_slopCentro100kb$norm_count)
+
+#re.ordered_IP2.df <- df_IP2_slopCentro100kb %>% mutate(norm_count_IP1 = df_IP1_slopCentro100kb$norm_count, norm_count_IP2 = df_IP2_slopCentro100kb$norm_count, norm_count_IP3 = df_IP3_slopCentro100kb$norm_count, norm_count_IP4 = df_IP4_slopCentro100kb$norm_count)
+#re.ordered_IP2.df <- re.ordered_IP2.df %>% arrange(desc(norm_count))
+
+re.ordered_IP1.df <- df_IP1_slopCentro100kb %>% mutate(norm_count_IP1 = df_IP1_slopCentro100kb$norm_count, norm_count_IP2 = df_IP2_slopCentro100kb$norm_count, norm_count_IP3 = df_IP3_slopCentro100kb$norm_count, norm_count_IP4 = df_IP4_slopCentro100kb$norm_count)
+re.ordered_IP1.df <- re.ordered_IP1.df %>% arrange(desc(norm_count))
+
+head(re.ordered_IP1.df)
+tail(re.ordered_IP1.df)
+
+#ggplot(data = re.ordered_IP1.df, aes(x = as.numeric(row.names(re.ordered_IP1.df)), y = norm_count_IP1)) + geom_point(size = 0.1) + theme_plot  + scale_x_reverse()
+
+ggplot(data = re.ordered_IP1.df, aes(x = as.numeric(row.names(re.ordered_IP1.df)), y = norm_count_IP1)) + geom_point(size = 0.1, color = "red") # + geom_point(data = df_IP1_slopCentro100kb, aes(x = rank, y = norm_count), color = "forestgreen", size = 0.1) + theme_plot + scale_x_reverse()
+
+#ggplot(data = re.ordered_IP2.df, aes(x = as.numeric(row.names(re.ordered_IP1.df)), y = norm_count_IP2)) + geom_point(size = 0.1, color = "blue") + geom_point(data = df_IP2_slopCentro100kb, aes(x = rank, y = norm_count), color = "forestgreen", size = 0.1) + theme_plot
+
+#ggplot(data = re.ordered_IP1.df, aes(x = as.numeric(row.names(re.ordered_IP1.df)), y = norm_count_IP3)) + geom_point(size = 0.1, color = "brown") + geom_point(data = df_IP3_slopCentro100kb, aes(x = rank, y = norm_count), color = "forestgreen", size = 0.1) + theme_plot
+
+#ggplot(data = re.ordered_IP1.df, aes(x = as.numeric(row.names(re.ordered_IP1.df)), y = norm_count_IP4)) + geom_point(size = 0.1, , color = "purple") + geom_point(data = df_IP4_slopCentro100kb, aes(x = rank, y = norm_count), color = "forestgreen", size = 0.1) + theme_plot
+
+```
+
+## Dataframe with fold-change
+```{r fold_change.df}
+fold_change.df <- tibble(
+  chr = df_IP1_slopCentro100kb$chr, 
+  start = df_IP1_slopCentro100kb$start, 
+  end = df_IP1_slopCentro100kb$end, 
+  id = df_IP1_slopCentro100kb$id, 
+  rank = df_IP1_slopCentro100kb$rank, 
+  IP1 = df_IP1_slopCentro100kb$norm_count, 
+  IP2 = df_IP2_slopCentro100kb$norm_count, 
+  IP3 = df_IP3_slopCentro100kb$norm_count, 
+  IP4 = df_IP4_slopCentro100kb$norm_count, 
+  fc_IP2 = IP1/IP2, 
+  fc_IP3 = IP1/IP3, 
+  fc_IP4 = IP1/IP4,
+  log2.fc.IP2 = log(fc_IP2, 2), 
+  log2.fc.IP3 = log(fc_IP3, 2), 
+  log2.fc.IP4 = log(fc_IP4, 2))
+
+fold_change.df
+
+ggplot(fold_change.df, aes(log2.fc.IP2, log2.fc.IP3)) + geom_point(size = 0.1, color = 'red') + geom_point(aes(log2.fc.IP2, log2.fc.IP4), size = 0.1, color = 'blue') + theme_plot
+
+ggplot(fold_change.df, aes(IP2, IP3)) + geom_point(size = 0.1, color = 'red') + theme_plot
+ggplot(fold_change.df, aes(IP2, IP4)) + geom_point(size = 0.1, color = 'red') + theme_plot
+```
+
+## Fold change analysis and associated genes
+```{r fc and genes}
+#fold_change.df %>% arrange(desc(fc_IP1)) %>% filter(as.numeric(row.names(fold_change.df))<100) %>% ggplot(aes(x = rank, y = IP2, color = "IP2")) + geom_point() + geom_point(aes(x = rank, y = IP1, color = "IP1")) + theme_plot
+#fold_change.df %>% arrange(desc(fc_IP3)) %>% filter(as.numeric(row.names(fold_change.df))<100) %>% ggplot(aes(x = rank, y = IP2, color = "IP2")) + geom_point() + geom_point(aes(x = rank, y = IP3, color = "IP3")) + theme_plot
+#fold_change.df %>% arrange(desc(fc_IP4)) %>% filter(as.numeric(row.names(fold_change.df))<100) %>% ggplot(aes(x = rank, y = IP2, color = "IP2")) + geom_point() + geom_point(aes(x = rank, y = IP4, color = "IP4")) + theme_plot
+
+ip2 <- fold_change.df %>% arrange(desc(IP1))  %>% ggplot(aes(x = as.numeric(row.names(fold_change.df)), y = IP2, color = "IP2", show.legend="TRUE")) + geom_point(size = 0.5) + geom_point(aes(x = as.numeric(row.names(fold_change.df)), y = IP1, color = "IP1"), size = 0.5) + theme_plot + scale_x_continuous(name="Rang") + scale_y_continuous(name="Comptage Normalisé") + labs(colour = "Expérience")  + scale_x_reverse()
+
+ip3 <- fold_change.df %>% arrange(desc(IP1))  %>% ggplot(aes(x = as.numeric(row.names(fold_change.df)), y = IP3, color = "IP3")) + geom_point(size = 0.5) + geom_point(aes(x = as.numeric(row.names(fold_change.df)), y = IP1, color = "IP1"), size = 0.5) + theme_plot + scale_x_continuous(name="Rang") + scale_y_continuous(name="Comptage Normalisé") + labs(colour = "Expérience")  + scale_x_reverse()
+
+ip4 <- fold_change.df %>% arrange(desc(IP1))  %>% ggplot(aes(x = as.numeric(row.names(fold_change.df)), y = IP4, color = "IP4")) + geom_point(size = 0.5) + geom_point(aes(x = as.numeric(row.names(fold_change.df)), y = IP1, color = "IP1"), size = 0.5) + theme_plot + scale_x_continuous(name="Rang") + scale_y_continuous(name="Comptage Normalisé") + labs(colour = "Expérience")  + scale_x_reverse()
+
+ip2
+ip3
+ip4
+
+#ggsave("hockey_stick_plot_IP1.png", ip1)
+#ggsave("hockey_stick_plot_IP3.png", ip3)
+#ggsave("hockey_stick_plot_IP4.png", ip4)
+
+fold_change.df %>% arrange(desc(fc_IP2)) %>% filter(as.numeric(row.names(fold_change.df))<100)
+```
+
+```{r hockey_stick_plots}
+fold_change.df %>% arrange(desc(IP1)) %>% mutate(new.rank = as.numeric(row.names(fold_change.df)), status = ifelse(new.rank<300, "Super-Enhancer", "Enhancer")) %>% ggplot(aes(x = new.rank, y = log(IP1,2), color = status)) + geom_point(size = 0.1) + theme_plot   + scale_x_reverse()
+
+#fold_change.df %>% arrange(desc(IP1)) %>% mutate(new.rank = as.numeric(row.names(fold_change.df)), status = ifelse(new.rank<452, "Super-Enhancer", "Enhancer")) %>% ggplot(aes(x = rank, y = log(IP1,2), color = status)) + geom_point(size = 0.1) + theme_plot
+
+fold_change.df %>% arrange(desc(IP1)) %>% mutate(new.rank = as.numeric(row.names(fold_change.df)), status = ifelse(new.rank<300, "Super-Enhancer", "Enhancer")) %>% ggplot(aes(x = new.rank, y = IP1, color = status)) + geom_point(size = 0.5) + theme_plot + scale_x_continuous(name="Rang") + scale_y_continuous(name="Comptage Normalisé IP2") + labs(colour = "Classe")  + scale_x_reverse()
+
+#ggsave(filename = "hockey_stick_plot.png")
+
+enhancers.df <- fold_change.df %>% arrange(desc(IP1)) %>% mutate(new.rank = as.numeric(row.names(fold_change.df)), status = ifelse(new.rank<300, "Super-Enhancer", "Enhancer"))
+
+enhancers.df %>% arrange(desc(IP1))  %>% ggplot(aes(x = as.numeric(row.names(fold_change.df)), y = IP2, color = "IP2", show.legend="TRUE")) + geom_point(size = 0.5) + geom_point(aes(x = as.numeric(row.names(fold_change.df)), y = IP1, color = "IP1"), size = 0.5) + theme_plot + scale_x_continuous(name="Rang") + scale_y_continuous(name="Comptage Normalisé") + labs(colour = "Expérience")  + scale_x_reverse()
+
+enhancers.df %>% arrange(desc(IP1))  %>% ggplot(aes(x = as.numeric(row.names(fold_change.df)), y = IP3, color = "IP3")) + geom_point(size = 0.5) + geom_point(aes(x = as.numeric(row.names(fold_change.df)), y = IP1, color = "IP1"), size = 0.5) + theme_plot + scale_x_continuous(name="Rang") + scale_y_continuous(name="Comptage Normalisé") + labs(colour = "Expérience")  + scale_x_reverse()
+
+enhancers.df %>% arrange(desc(IP1))  %>% ggplot(aes(x = as.numeric(row.names(fold_change.df)), y = IP4, color = "IP4")) + geom_point(size = 0.5) + geom_point(aes(x = as.numeric(row.names(fold_change.df)), y = IP1, color = "IP1"), size = 0.5) + theme_plot + scale_x_continuous(name="Rang") + scale_y_continuous(name="Comptage Normalisé") + labs(colour = "Expérience")  + scale_x_reverse()
+```
+
+```{r nckds}
+# Re-ranking pour chaque conditions
+re.ranking.enhancers.df <- enhancers.df %>% arrange(desc(IP2)) %>% mutate(rank.IP1 = as.numeric(row.names(enhancers.df)))
+re.ranking.enhancers.df %>% filter(status == "Super-Enhancer") %>% ggplot(aes(x = new.rank, y = rank.IP1)) + geom_point(size = 0.1) + scale_x_reverse()+ ylim(0, 500)
+
+re.ranking.enhancers.df <- enhancers.df %>% arrange(desc(IP3)) %>% mutate(rank.IP3 = as.numeric(row.names(enhancers.df)))
+re.ranking.enhancers.df %>% filter(status == "Super-Enhancer") %>% ggplot(aes(x = new.rank, y = rank.IP3)) + geom_point(size = 0.1) + scale_x_reverse()+ ylim(0, 500)
+
+re.ranking.enhancers.df <- enhancers.df %>% arrange(desc(IP4)) %>% mutate(rank.IP4 = as.numeric(row.names(enhancers.df)))
+re.ranking.enhancers.df %>% filter(status == "Super-Enhancer") %>% ggplot(aes(x = new.rank, y = rank.IP4)) + geom_point(size = 0.1) + scale_x_reverse() + ylim(0, 500)
+```
+
+```{r cormat}
+head(re.ranking.enhancers.df)
+mydata <- re.ranking.enhancers.df[, c(6,7,8,9)]
+head(mydata)
+
+cormat <- round(cor(mydata),2)
+head(cormat)
+
+library(reshape2)
+melted_cormat <- melt(cormat)
+head(melted_cormat)
+
+# Heatmap
+library(ggplot2)
+ggplot(data = melted_cormat, aes(Var2, Var1, fill = value))+
+ geom_tile(color = "white")+
+ scale_fill_gradient2(low = "blue", high = "red", mid = "white", 
+   midpoint = 0, limit = c(-1,1), space = "Lab", 
+   name="Pearson\nCorrelation") +
+  theme_minimal()+ 
+ theme(axis.text.x = element_text(angle = 45, vjust = 1, 
+    size = 12, hjust = 1))+
+ coord_fixed()
+
+library("pheatmap")
+pheatmap(cor(mydata, method = "pearson"), treeheight_row = 0.2)
+```
+```{r genes}
+head(re.ranking.enhancers.df)
+head(id.gene)
+kras.up <- re.ranking.enhancers.df %>% filter(fc_IP2 < 1)
+kras.up %>% ggplot(aes(rank, -log2.fc.IP2)) + geom_point()
+
+LIST <- c()
+for (id in kras.up$id) {
+  GENES <- id.gene %>% filter(ID == id) %>% pull(var = Gene)
+  LIST <- c(LIST, GENES)
+}
+LIST_UNIQUE <- unique(LIST)
+length(LIST_UNIQUE)
+head(LIST_UNIQUE)
+```
+## SE with fold-change > 1
+```{r SE.fc}
+SE.enhancers.df <- enhancers.df %>% filter(status == "Super-Enhancer")
+SE.fc.sup.1 <- SE.enhancers.df %>% filter(fc_IP2 < 1 & fc_IP3 > 1 & fc_IP4 > 1)
+
+SE.enhancers.df %>% ggplot(aes(x = new.rank, y = log2.fc.IP2, color = "IP2/IP1")) + geom_point() + geom_point(aes(x = new.rank, y = log2.fc.IP3, color = "IP2/IP3")) + geom_point(aes(x = new.rank, y = log2.fc.IP4, color = "IP2/IP4")) + theme_plot + scale_x_continuous(name="Rang Super-Enhancers") + scale_y_continuous(name="Log2(fold-change)") + labs(colour = "Fold-change") + stat_smooth(aes(x = new.rank, y = log2.fc.IP3, color = "IP2/IP3")) + stat_smooth(aes(x = new.rank, y = log2.fc.IP1, color = "IP2/IP1")) + stat_smooth(aes(x = new.rank, y = log2.fc.IP4, color = "IP2/IP4"))
+
+
+SE.fc.sup.1 %>% ggplot(aes(x = new.rank, y = log2.fc.IP1, color = "IP2/IP1")) + geom_point() + geom_point(aes(x = new.rank, y = log2.fc.IP3, color = "IP2/IP3")) + geom_point(aes(x = new.rank, y = log2.fc.IP4, color = "IP2/IP4")) + theme_plot + scale_x_continuous(name="Rang Super-Enhancers") + scale_y_continuous(name="Log2(fold-change)") + labs(colour = "Fold-change")
+#ggsave(filename = "fold_change.png")
+#SE.fc.sup.1
+
+#SE.fc.sup.1 %>% ggplot(aes(x = new.rank, y = log2.fc.IP1, color = "IP2/IP1")) + geom_point() + geom_point(aes(x = new.rank, y = log2.fc.IP3, color = "IP2/IP3")) + geom_point(aes(x = new.rank, y = log2.fc.IP4, color = "IP2/IP4")) + geom_smooth(color = "black") + geom_smooth(aes(x = new.rank, y = log2.fc.IP3), color = "green") + geom_smooth(aes(x = new.rank, y = log2.fc.IP4), color = "blue") + theme_plot
+
+SE.enhancers.df %>% ggplot(aes(x = "IP1", y = log2.fc.IP1, color = "IP2/IP1")) + geom_boxplot() + geom_boxplot(aes(x = "IP3", y = log2.fc.IP3, color = "IP2/IP3")) + geom_boxplot(aes(x = "IP4", y = log2.fc.IP4, color = "IP2/IP4")) + theme_plot + labs(colour = "Fold-change") + scale_y_continuous(name="Log2(fold-change)")
+
+SE.fc.sup.1 %>% ggplot(aes(x = "IP1", y = log2.fc.IP1, color = "IP2/IP1")) + geom_boxplot() + geom_boxplot(aes(x = "IP3", y = log2.fc.IP3, color = "IP2/IP3")) + geom_boxplot(aes(x = "IP4", y = log2.fc.IP4, color = "IP2/IP4")) + theme_plot + labs(colour = "Fold-change") + scale_y_continuous(name="Log2(fold-change)")# + scale_x_continuous(name=c("1", "2", "3"))
+#ggsave("boxplot.png")
+
+SE.enhancers.df %>% ggplot(aes(x = "IP1", y = log2.fc.IP1)) + geom_violin() + geom_violin(aes(x = "IP3", y = log2.fc.IP3), color = "red") + geom_violin(aes(x = "IP4", y = log2.fc.IP4), , color = "blue") + theme_plot
+
+SE.enhancers.df %>% ggplot(aes(x = "IP1", y = log2.fc.IP1)) + geom_jitter(width = 0.2) + geom_jitter(aes(x = "IP3", y = log2.fc.IP3), color = "red") + geom_jitter(aes(x = "IP4", y = log2.fc.IP4), color = "blue") + theme_plot
+
+
+SE.fc.sup.1 %>% ggplot(aes(x = "IP1", y = log2.fc.IP1)) + geom_violin() + geom_violin(aes(x = "IP3", y = log2.fc.IP3), color = "red") + geom_violin(aes(x = "IP4", y = log2.fc.IP4), , color = "blue") + theme_plot
+
+SE.fc.sup.1 %>% ggplot(aes(x = "IP1", y = log2.fc.IP1)) + geom_jitter(width = 0.2) + geom_jitter(aes(x = "IP3", y = log2.fc.IP3), color = "red") + geom_jitter(aes(x = "IP4", y = log2.fc.IP4), color = "blue") + theme_plot
+
+library(EnvStats)
+#ebeta(SE.fc.sup.1$IP1)
+test <- SE.fc.sup.1 %>% mutate(test = pbeta(IP3, 1.868222, 65575.053780, ncp = 0, lower.tail = FALSE, log.p = FALSE)) %>% filter(test > 0.05)
+test
+#t.test(SE.fc.sup.1$log2.fc.IP1, SE.fc.sup.1$log2.fc.IP3, paired = TRUE)
+#t.test(SE.fc.sup.1$log2.fc.IP1, SE.fc.sup.1$log2.fc.IP4, paired = TRUE)
+#t.test(SE.fc.sup.1$log2.fc.IP3, SE.fc.sup.1$log2.fc.IP4, paired = TRUE)
+
+#SE.enhancers.df %>% ggplot(aes(x = new.rank, y = log(IP2, 2), color = "IP2")) + geom_point(size = 0.3) + geom_point(aes(x = new.rank, y = log(IP1, 2), color = "IP1"), size = 0.3) + theme_plot
+#SE.enhancers.df %>% ggplot(aes(x = new.rank, y = log(IP2, 2), color = "IP2")) + geom_point(size = 0.3) + geom_point(aes(x = new.rank, y = log(IP3, 2), color = "IP3"), size = 0.3) + theme_plot
+#SE.enhancers.df %>% ggplot(aes(x = new.rank, y = log(IP2, 2), color = "IP2")) + geom_point(size = 0.3) + geom_point(aes(x = new.rank, y = log(IP4, 2), color = "IP4"), size = 0.3) + theme_plot
+```
+
+## Récupération des ID des Super-Enhancers associés à des gènes
+```{r SE}
+id.gene %>% filter(ID == "8_IP2_Ac_R1_NoControl_peak_9_lociStitched")
+list <- c() # Initalisation de la liste des ID
+for (id_sup in SE.fc.sup.1$id) {  # SE.fc.sup.1 => data frame des SE avec un fold-change > 1 d'IP2 dans les trois conditions.
+  for (id_enh in id.gene$ID) {  # id.gene => data frame des couples ID-Gene identifiés par ROSE_geneMapper
+    if (id_enh == id_sup) {  # Si les ID sont identiques :
+      if (id_enh %in% list) {  
+        one <- 1
+      } else {  # Si l'ID n'est pas dans la liste, l'ajouter.
+        list <- c(list, id_enh)
+      }
+    }
+  }
+}
+head(list)
+```
+
+## Récupération des génes des Super-Enhancers
+Sont récupérés les gènes associés à des super-enhancers (ROSE):
+```{r melt data}
+library(reshape)
+library(tibble)
+id.gene %>% filter(ID == "2_IP2_Ac_R1_NoControl_peak_37167_lociStitched")
+
+enhancers.df %>% filter(id =="2_IP2_Ac_R1_NoControl_peak_37167_lociStitched")
+enhancers.df %>% filter(id =="4_IP2_Ac_R1_NoControl_peak_37175_lociStitched")
+
+
+```
+
+```{r trans}
+LIST <- c()
+for (id in SE.fc.sup.1$id) {
+  GENES <- id.gene %>% filter(ID == id) %>% pull(var = Gene)
+  LIST <- c(LIST, GENES)
+}
+LIST_UNIQUE <- unique(LIST)
+length(LIST_UNIQUE)
+head(LIST_UNIQUE)
+#write.table(LIST_UNIQUE, file='list_unique.tsv', quote=FALSE, sep='\t', col.names = NA)
+#df %>% spread(key = ID, value = Gene)
+#df <- id.gene %>% rowid_to_column(var = "rowid") %>% spread(key = ID, value = Gene)  # Transformation des données dans un nouveau data frame
+
+```
+New Super-enhancers
+```{r New Super-enhancers}
+enhancers.df %>% filter(rank > 452 & new.rank < 452)
+```
+
+Old Super-enhancers
+```{r Old Super-enhancers}
+enhancers.df %>% filter(rank < 452 & new.rank > 452)
+```
+
+Rank modification
+```{r rank modification}
+length(enhancers.df$id)
+enhancers.df %>% filter(rank > new.rank)
+```
+
+
+## Fit distribution
+```{r ditri}
+descdist(SE.fc.sup.1$IP1, discrete=FALSE, boot=500)
+```
+  
