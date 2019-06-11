@@ -1,15 +1,18 @@
 import sys
 
 header = """
+
 Take two lists of genes , and return intersected genes.
 """
 print(header)
 
+
 def genes_in_file(file):
-  print("Opening {file}".format(file = file))
-  genes = open(file, "r").readlines()
-  print("{n} genes in ChIP-seq file".format(n = len(genes)))
-  return genes
+    print("Opening {file}".format(file = file))
+    genes = open(file, "r").readlines()
+    print("{n} genes in ChIP-seq file".format(n = len(genes)))
+    return genes
+
 
 def rna_genes(rna_file):
     print("Opening {file}".format(file = rna_file))
@@ -17,6 +20,7 @@ def rna_genes(rna_file):
     genes = [line.split("\t")[1][:-1] for line in lines]
     print("{n} genes in RNA-seq file".format(n = len(genes)))
     return genes
+
 
 def intersect_list(chip, rna):
     intersect_list = []
@@ -28,11 +32,14 @@ def intersect_list(chip, rna):
     print("{n} gene(s) intersected".format(n = len(intersect_list)))
     return intersect_list
 
+
 def print_genes(list):
     for gene in list:
         print("\t",gene)
 
+
 def main():
     print_genes(intersect_list(genes_in_file(sys.argv[1]), rna_genes(sys.argv[2])))
+
 
 main()
