@@ -2,7 +2,6 @@ import sys
 import argparse
 
 
-
 def genes_in_file(file):
     """"Take a gene list file and return a python list of all genes."""
     print("Opening {file}".format(file = file))
@@ -44,7 +43,6 @@ def main(chip_seq_genes=0, rna_seq_genes=0):
 
     chip_seq_genes: text file of ChIP-seq genes (first argument of the script)
     rna_seq_genes: text file of RNA-seq genes (second argument of the script)
-
     """
     rna_seq_gene_list = rna_genes(rna_seq_genes)
     chip_seq_genes_list = genes_in_file(chip_seq_genes)
@@ -54,10 +52,8 @@ def main(chip_seq_genes=0, rna_seq_genes=0):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Process lists of genes and return intersected genes.')
-    parser.add_argument('-r', action='store', dest='rna_file',
-                    help='a list of RNA-seq genes.')
-    parser.add_argument('-c', action='store', dest='chip_file',
-                        help='a list of ChIP-seq genes.')
+    parser.add_argument('-r', action='store', dest='rna_file', help='a list of RNA-seq genes.')
+    parser.add_argument('-c', action='store', dest='chip_file', help='a list of ChIP-seq genes.')
     results = parser.parse_args()
 
     if results.rna_file and results.chip_file:
