@@ -11,7 +11,7 @@ def genes_in_file(file):
 def rna_genes(rna_file):
     print("Opening {file}".format(file = rna_file))
     lines = open(rna_file, "r").readlines()
-    genes = [line.split("\t")[1][:-1] for line in lines]
+    genes = [line.split("\t")[1][:-1] for line in lines[1:]]
     print("{n} genes in RNA-seq file".format(n = len(genes)))
     return genes
 
