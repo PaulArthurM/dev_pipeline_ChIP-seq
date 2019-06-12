@@ -1,4 +1,6 @@
 import sys
+import argparse
+
 
 
 def genes_in_file(file):
@@ -47,8 +49,13 @@ def main(chip_seq_genes=sys.argv[1], rna_seq_genes=sys.argv[2]):
     rna_seq_gene_list = rna_genes(rna_seq_genes)
     chip_seq_genes_list = genes_in_file(chip_seq_genes)
     intersected_gene_list = intersect_list(chip_seq_genes_list, rna_seq_gene_list)
-    print_genes(intersected_gene_list)
+    print_genes(intersected_gene_list)  
 
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='Process lists of genes and return intersected genes.')
+    parser.add_argument('rna_seq_file', metavar='R', type=str, nargs='+',
+                        help='a list of RNA-seq genes.')
+    parser.add_argument('chip_seq_file', metavar='C', type=str, nargs='+',
+                        help='a list of ChIP-seq genes.')
     main()
