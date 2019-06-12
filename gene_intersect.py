@@ -39,7 +39,7 @@ def print_genes(list):
         print("\t",gene)
 
 
-def main(chip_seq_genes=sys.argv[1], rna_seq_genes=sys.argv[2]):
+def main(chip_seq_genes=0, rna_seq_genes=0):
     """Take two lists of genes , and return intersected genes.
 
     chip_seq_genes: text file of ChIP-seq genes (first argument of the script)
@@ -49,13 +49,16 @@ def main(chip_seq_genes=sys.argv[1], rna_seq_genes=sys.argv[2]):
     rna_seq_gene_list = rna_genes(rna_seq_genes)
     chip_seq_genes_list = genes_in_file(chip_seq_genes)
     intersected_gene_list = intersect_list(chip_seq_genes_list, rna_seq_gene_list)
-    print_genes(intersected_gene_list)  
+    print_genes(intersected_gene_list)
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Process lists of genes and return intersected genes.')
-    parser.add_argument('rna_seq_file', metavar='R', type=str, nargs='+',
-                        help='a list of RNA-seq genes.')
-    parser.add_argument('chip_seq_file', metavar='C', type=str, nargs='+',
+    parser.add_argument('-r', action='store', dest='rna_file',
+                    help='a list of RNA-seq genes.')
+    parser.add_argument('-c', action='store', dest='chip_file',
                         help='a list of ChIP-seq genes.')
-    main()
+    results = parser.parse_args()
+
+    if results.rna_file and results.chip_file:
+        main(results.chip_file, results.rna_file)
