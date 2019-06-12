@@ -1,11 +1,5 @@
 import sys
 
-header = """
-
-Take two lists of genes , and return intersected genes.
-"""
-print(header)
-
 
 def genes_in_file(file):
     print("Opening {file}".format(file = file))
@@ -38,8 +32,14 @@ def print_genes(list):
         print("\t",gene)
 
 
-def main():
-    print_genes(intersect_list(genes_in_file(sys.argv[1]), rna_genes(sys.argv[2])))
+def main(chip_seq_genes=sys.argv[1], rna_seq_genes=sys.argv[2]):
+    """Take two lists of genes , and return intersected genes.
+    
+    chip_seq_genes: text file of ChIP-seq genes (first argument of the script)
+    rna_seq_genes: text file of RNA-seq genes (second argument of the script)
+    
+    """
+    print_genes(intersect_list(genes_in_file(chip_seq_genes), rna_genes(rna_seq_genes)))
 
 
 main()
